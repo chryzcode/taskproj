@@ -3,6 +3,13 @@ from django.contrib.auth import get_user_model, authenticate
 
 User = get_user_model()
 
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        exclude =['password']
+        read_only_fields = ('id', 'is_active', 'is_staff', 'created', 'updated')
+
+
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 
