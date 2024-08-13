@@ -11,16 +11,26 @@ from order.models import Order
 from .serializers import *
 from user.permissions import IsAdminOrReadOnly
 
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def product_list(request):
+    """
+    Retrieve a list of all products.
+    Only accessible to authenticated users.
+    """
     products = Product.objects.all()
     serializer = ProductDetailSerializer(products, many=True)
     return Response(serializer.data)
 
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsAdminUser])
 def product_create(request):
+    """
+    Create a new product.
+    Only accessible to authenticated admin users.
+    """
     serializer = ProductSerializer(data=request.data)
     if serializer.is_valid():
         product = serializer.save(user=request.user)
@@ -28,9 +38,15 @@ def product_create(request):
         return Response(detail_serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated, IsAdminOrReadOnly])
 def product_detail(request, pk):
+    """
+    Retrieve, update, or delete a specific product.
+    GET: Accessible to all authenticated users.
+    PUT, DELETE: Accessible to authenticated admin users.
+    """
     try:
         product = Product.objects.get(pk=pk)
     except Product.DoesNotExist:
@@ -53,17 +69,25 @@ def product_detail(request, pk):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def low_stock_report(request):
+    """
+    Retrieve a report of products with low stock (quantity less than 10).
+    Only accessible to authenticated admin users.
+    """
     low_stock_products = Product.objects.filter(quantity__lt=10)
     serializer = LowStockProductSerializer(low_stock_products, many=True)
     return Response(serializer.data)
 
+
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def sales_report(request, period='day'):
+    """
+    Retrieve a sales report for a specified period (day, week, month).
+    Only accessible to authenticated admin users.
+    """
     if period == 'day':
         start_date = timezone.now().date() - timedelta(days=1)
     elif period == 'week':

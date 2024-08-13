@@ -2,13 +2,21 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .models import Order, OrderItem
-from .serializers import *
-
+from .models import Order
+from .serializers import OrderSerializer, OrderDetailSerializer, OrderStatusSerializer
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def order_create(request):
+    """
+    Create a new order.
+
+    POST request to create a new order.
+    The request must be authenticated.
+
+    
+    Returns the created order details if successful.
+    """
     serializer = OrderSerializer(data=request.data, context={'request': request})
     if serializer.is_valid():
         order = serializer.save()
@@ -16,10 +24,21 @@ def order_create(request):
         return Response(detail_serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 @api_view(['POST', 'GET'])
 @permission_classes([IsAuthenticated])
-def order_create(request):
+def order_create_or_list(request):
+    """
+    Create a new order or list all orders.
+
+    POST request to create a new order.
+    GET request to list all orders.
+    The request must be authenticated.
+
+  
+
+    Returns the created order details if POST is successful.
+    Returns a list of all orders if GET is successful.
+    """
     if request.method == 'POST':
         serializer = OrderSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
@@ -35,6 +54,20 @@ def order_create(request):
 @api_view(['GET', 'PUT'])
 @permission_classes([IsAuthenticated])
 def order_detail(request, pk):
+    """
+    Retrieve or update order details.
+
+    GET request to retrieve the details of a specific order.
+    PUT request to update the status of a specific order (staff only).
+    The request must be authenticated.
+
+    GET request URL: /orders/<pk>/
+    PUT request URL: /orders/<pk>/
+
+ 
+    Returns the order details if GET is successful.
+    Returns the updated order details if PUT is successful.
+    """
     try:
         order = Order.objects.get(pk=pk)
     except Order.DoesNotExist:
@@ -53,5 +86,3 @@ def order_detail(request, pk):
                 return Response(detailed_order.data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_403_FORBIDDEN)
-
-

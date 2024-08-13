@@ -4,13 +4,21 @@ from django.contrib.auth import get_user_model, authenticate
 User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
+    """
+    Serializer for User model.
+    Excludes the password field and makes certain fields read-only.
+    """
     class Meta:
         model = User
-        exclude =['password']
+        exclude = ['password']
         read_only_fields = ('id', 'is_active', 'is_staff', 'created', 'updated')
 
 
 class RegisterSerializer(serializers.ModelSerializer):
+    """
+    Serializer for user registration.
+    Handles the creation of a new user with the provided email, full name, and password.
+    """
     password = serializers.CharField(write_only=True)
 
     class Meta:
@@ -25,7 +33,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         )
         return user
 
+
 class LoginSerializer(serializers.Serializer):
+    """
+    Serializer for user login.
+    Validates the user's email and password.
+    """
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
