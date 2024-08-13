@@ -3,7 +3,12 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from .models import Product
-from .serializers import ProductSerializer, ProductDetailSerializer
+from order.models import OrderItem
+from django.db.models import Sum, F
+from datetime import datetime, timedelta
+from django.utils import timezone
+from order.models import Order
+from .serializers import *
 from user.permissions import IsAdminOrReadOnly
 
 @api_view(['GET'])
@@ -46,3 +51,37 @@ def product_detail(request, pk):
     elif request.method == 'DELETE':
         product.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def low_stock_report(request):
+    low_stock_products = Product.objects.filter(quantity__lt=10)
+    serializer = LowStockProductSerializer(low_stock_products, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def sales_report(request, period='day'):
+    if period == 'day':
+        start_date = timezone.now().date() - timedelta(days=1)
+    elif period == 'week':
+        start_date = timezone.now().date() - timedelta(weeks=1)
+    elif period == 'month':
+        start_date = timezone.now().date() - timedelta(days=30)
+    else:
+        return Response({"error": "Invalid period"}, status=status.HTTP_400_BAD_REQUEST)
+
+    orders = Order.objects.filter(created_at__gte=start_date)
+
+    report_data = orders.annotate(date=F('created_at__date')) \
+                        .values('date') \
+                        .annotate(
+                            total_sales=Sum(F('items__quantity') * F('items__product__price')),
+                            total_quantity=Sum('items__quantity')
+                        ) \
+                        .values('date', 'total_sales', 'total_quantity')
+
+    serializer = SalesReportSerializer(report_data, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
