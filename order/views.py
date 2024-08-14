@@ -5,24 +5,6 @@ from rest_framework.response import Response
 from .models import Order
 from .serializers import OrderSerializer, OrderDetailSerializer, OrderStatusSerializer
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def order_create(request):
-    """
-    Create a new order.
-
-    POST request to create a new order.
-    The request must be authenticated.
-
-    
-    Returns the created order details if successful.
-    """
-    serializer = OrderSerializer(data=request.data, context={'request': request})
-    if serializer.is_valid():
-        order = serializer.save()
-        detail_serializer = OrderDetailSerializer(order)
-        return Response(detail_serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST', 'GET'])
 @permission_classes([IsAuthenticated])
