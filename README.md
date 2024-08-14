@@ -20,4 +20,6 @@ Set `DEBUG` to `True` and add your secret key
 - Run the server
 `python manage.py runserver`
 
+
 **You are good to go**
+
