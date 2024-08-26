@@ -2,8 +2,15 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .models import Order
+from product.serializers import ProductSerializer
+from .models import Order, OrderItem
+from product.models import Product
+from django.db.models import Sum
 from .serializers import OrderSerializer, OrderDetailSerializer, OrderStatusSerializer
+from django.contrib.auth import get_user_model, authenticate
+
+User = get_user_model()
+
 
 
 @api_view(['POST', 'GET'])
@@ -68,3 +75,26 @@ def order_detail(request, pk):
                 return Response(detailed_order.data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_403_FORBIDDEN)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def getRecommendedProducts(request):
+    # Aggregate the order items by product and sum their quantities
+    ordered_products = (
+        OrderItem.objects.filter(order__user=request.user)
+        .values('product')
+        .annotate(total_quantity=Sum('quantity'))
+        .order_by('-total_quantity')
+    )
+
+    # Get the product IDs of the most frequently ordered products
+    top_product_ids = [item['product'] for item in ordered_products]
+
+    # Fetch the recommended products (you can modify this query to suit your recommendation logic)
+    recommended_products = Product.objects.filter(id__in=top_product_ids)
+
+    # Serialize the products
+    serializer = ProductSerializer(recommended_products, many=True)
+    
+    return Response(serializer.data)
